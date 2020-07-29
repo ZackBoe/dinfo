@@ -197,7 +197,8 @@ https://github.com/zackboe/dinfo`,
         continue
       }
 
-      fmt.Println(BgBlack(Bold(White("CT Logged subdomains for "+domain))))
+      fmt.Println(BgBlack(Bold(White("CT logged subdomains for "+domain))))
+      fmt.Printf(pad, "More:", Cyan("https://crt.sh/?q="+domain))
 
       printed := make(map[string]bool)
       for i := range certs {
