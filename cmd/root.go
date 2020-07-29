@@ -41,6 +41,9 @@ import (
   // "github.com/domainr/whois"
   "github.com/likexian/whois-go"
   "github.com/likexian/whois-parser-go"
+
+  // github.com/tomnomnom/assetfinder // Needs module support
+  "github.com/JFryy/go-crtsh-api"
 )
 
 
@@ -48,6 +51,7 @@ var cfgFile string
 var FlagIP bool
 var FlagCert bool
 var FlagWhois bool
+var FlagSubs bool
 
 // thx https://stackoverflow.com/a/50825191/1810897
 // pls give https://github.com/golang/go/issues/29146
@@ -183,7 +187,30 @@ https://github.com/zackboe/dinfo`,
         }
       }
     }
-    
+
+    if(FlagSubs) {
+      certs := crtsh.GetCerts(domain)
+
+      fmt.Println()
+      if len(certs) == 0 {
+        fmt.Println(Red("Could not find CT logged subdomains for "+domain))
+        continue
+      }
+
+      fmt.Println(BgBlack(Bold(White("CT Logged subdomains for "+domain))))
+
+      printed := make(map[string]bool)
+      for i := range certs {
+        subs := strings.Split(strings.ToLower(certs[i].NameValue), "\n")
+        for s := range subs {
+          if _, value := printed[subs[s]]; !value {
+            printed[subs[s]] = true
+            fmt.Println(subs[s])
+          }
+        }
+      }
+    }
+
     if err != nil {
       if err == err.(*net.DNSError) {
         fmt.Println(Red("IP lookup for failed for "+host))
@@ -238,6 +265,7 @@ func init() {
   rootCmd.PersistentFlags().BoolVarP(&FlagIP, "skip-ip", "i", false, "Skip IP Lookup")
   rootCmd.PersistentFlags().BoolVarP(&FlagCert, "cert", "c", false, "Perform TLS certificate check")
   rootCmd.PersistentFlags().BoolVarP(&FlagWhois, "whois", "w", false, "Perform WHOIS lookup")
+  rootCmd.PersistentFlags().BoolVarP(&FlagSubs, "subs", "s", false, "Perform crt.sh search for subdomains")
 
   for _, cidr := range []string{
     "127.0.0.0/8",    // IPv4 loopback
