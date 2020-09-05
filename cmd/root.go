@@ -34,7 +34,7 @@ import (
   "github.com/goware/urlx"
   "github.com/weppos/publicsuffix-go/publicsuffix"
 
-  // "github.com/miekg/dns" // Might check google/cf against local resolver?
+  "github.com/miekg/dns" // Might check google/cf against local resolver?
 
   "github.com/ipinfo/go-ipinfo/ipinfo"
 
@@ -90,6 +90,9 @@ https://github.com/zackboe/dinfo`,
     u, err := urlx.Parse(url)
     host, _, _ := urlx.SplitHostPort(u)
     domain, err := publicsuffix.Domain(host)
+
+    dnsClient := dns.Client{}
+    dnsServer := "8.8.8.8:53"
     
     // fmt.Println("Hello World! ["+ host +"] ["+ domain +"]")
 
@@ -141,6 +144,10 @@ https://github.com/zackboe/dinfo`,
         certErr := conn.VerifyHostname(host)
         cert := conn.ConnectionState().PeerCertificates[0]
 
+        m := dns.Msg{}
+        m.SetQuestion("_acme-challenge."+domain+".", dns.TypeCNAME)
+        r, _, dnsErr := dnsClient.Exchange(&m, dnsServer)
+
         if !FlagIP {
           fmt.Println()
         }
@@ -157,6 +164,9 @@ https://github.com/zackboe/dinfo`,
           fmt.Printf(pad, "Cert SANs:", Cyan(strings.Join(cert.DNSNames, ", ")))
         } else {
           fmt.Printf(pad, "Cert SANs:", Cyan(strconv.Itoa(len(cert.DNSNames))))
+        }
+        if dnsErr == nil && len(r.Answer) > 0 {
+          fmt.Printf(pad, "ACME CNAME:", Cyan(r.Answer[0].(*dns.CNAME).Target))
         }
         fmt.Printf(pad, "More:", Cyan("https://www.ssllabs.com/ssltest/analyze.html?d=" + host + "&hideResults=on"))
       }
